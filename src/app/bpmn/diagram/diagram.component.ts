@@ -45,7 +45,7 @@ export class DiagramComponent implements AfterContentInit, OnChanges, OnDestroy 
   @ViewChild('ref', { static: true }) private el!: ElementRef;
   @Output() private importDone: EventEmitter<any> = new EventEmitter();
 
-  @Input() private url!: string;
+  @Input()  url!: string;
 
   constructor(private http: HttpClient) {
 
@@ -53,7 +53,7 @@ export class DiagramComponent implements AfterContentInit, OnChanges, OnDestroy 
 
     this.bpmnJS.on('import.done', ({ error }: any) => {
       if (!error) {
-        this.bpmnJS.get('canvas').scale('fit-viewport');
+        this.bpmnJS.get('canvas').zoom('fit-viewport');
       }
     });
   }
