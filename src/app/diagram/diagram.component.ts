@@ -8,7 +8,8 @@ import {
   Output,
   ViewChild,
   SimpleChanges,
-  EventEmitter
+  EventEmitter,
+  OnInit,
 } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
@@ -22,81 +23,95 @@ import { map, switchMap } from 'rxjs/operators';
  * bpmn-modeler - bootstraps a full-fledged BPMN editor
  */
 import * as BpmnJS from 'bpmn-js/dist/bpmn-modeler.production.min.js';
+import { is, getBusinessObject } from 'bpmn-js/lib/util/ModelUtil';
 
 import { from, Observable, Subscription } from 'rxjs';
+import { BpmnService } from '../common/bpmn.service';
 
 @Component({
   selector: 'app-diagram',
-  template: `
-    <div #ref class="diagram-container"></div>
-  `,
+  templateUrl: './diagram.component.html',
   styles: [
     `
-      .diagram-container {
-        height: 100%;
+      .diagram-canvas {
+        height: 80vh;
         width: 100%;
       }
-    `
-  ]
+    `,
+  ],
 })
-export class DiagramComponent implements AfterContentInit, OnChanges, OnDestroy {
-  private bpmnJS;
+export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
+  // private bpmnJS: any;
+  private canvas: any;
+  private elementRegistry: any;
+  private modeling: any;
 
-  @ViewChild('ref', { static: true }) private el!: ElementRef;
-  @Output() private importDone: EventEmitter<any> = new EventEmitter();
+  diagramUrl: string =
+    'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
 
-  @Input() private url!: string;
+  @ViewChild('canvas', { static: true }) private el!: ElementRef;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private bpmn: BpmnService) {}
 
-    this.bpmnJS = new BpmnJS();
+  ngOnInit() {
+    // this.bpmnJS = new BpmnJS();
 
-    this.bpmnJS.on('import.done', ({ error }: any) => {
+    this.initModeler();
+  }
+
+  initModeler() {
+    console.log('[BPMN] Modeler:', this.bpmn['modeler']);
+    this.canvas = this.bpmn.get('canvas');
+    this.elementRegistry = this.bpmn.get('elementRegistry');
+    this.modeling = this.bpmn.get('modeling');
+
+    this.bpmn.on('import.done', ({ error }: any) => {
+      console.log('[BPMN] import done');
       if (!error) {
-        this.bpmnJS.get('canvas').scale('fit-viewport');
+        this.doThings();
+        this.canvas.zoom('fit-viewport', 'auto');
       }
     });
   }
 
-  ngAfterContentInit(): void {
-    this.bpmnJS.attachTo(this.el.nativeElement);
+  doThings() {
+    console.log('[BPMN] elementRegistry:', this.elementRegistry);
+    this.elementRegistry.forEach((element: any, gfx: any) => {
+      console.log('[BPMN] element type', element.type);
+      if (is(element, 'bpmn:Task')) {
+        this.modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
+      }
+      console.log('[BPMN] gfx', gfx);
+    });
+    console.log('[BPMN] modeling:', this.modeling);
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    // re-import whenever the url changes
-    if (changes.url) {
-      this.loadUrl(changes.url.currentValue);
-    }
+  ngAfterContentInit(): void {
+    this.bpmn.attachTo(this.el.nativeElement);
   }
 
   ngOnDestroy(): void {
-    this.bpmnJS.destroy();
+    this.bpmn.destroy();
   }
 
   /**
    * Load diagram from URL and emit completion event
    */
   loadUrl(url: string): Subscription {
-
-    return (
-      this.http.get(url, { responseType: 'text' }).pipe(
+    return this.http
+      .get(url, { responseType: 'text' })
+      .pipe(
         switchMap((xml: string) => this.importDiagram(xml)),
-        map(result => result.warnings),
-      ).subscribe(
+        map((result) => result.warnings)
+      )
+      .subscribe(
         (warnings) => {
-          this.importDone.emit({
-            type: 'success',
-            warnings
-          });
+          console.log('[BPMN] import warnings:', warnings);
         },
         (err) => {
-          this.importDone.emit({
-            type: 'error',
-            error: err
-          });
+          console.warn('[BPMN] import failed:', err);
         }
-      )
-    );
+      );
   }
 
   /**
@@ -105,7 +120,7 @@ export class DiagramComponent implements AfterContentInit, OnChanges, OnDestroy 
    *
    * @see https://github.com/bpmn-io/bpmn-js-callbacks-to-promises#importxml
    */
-  private importDiagram(xml: string): Observable<{warnings: Array<any>}> {
-    return from(this.bpmnJS.importXML(xml) as Promise<{warnings: Array<any>}>);
+  private importDiagram(xml: string): Observable<{ warnings: Array<any> }> {
+    return from(this.bpmn.importXML(xml));
   }
 }

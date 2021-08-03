@@ -1,1 +1,3 @@
-<p>diagram works!</p>
+<input type="text" [(ngModel)]="diagramUrl">
+<button (click)="loadUrl(diagramUrl)">Load url</button>
+<div #canvas class="diagram-canvas"></div>
