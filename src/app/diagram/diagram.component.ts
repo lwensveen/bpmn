@@ -2,31 +2,21 @@ import {
   AfterContentInit,
   Component,
   ElementRef,
-  Input,
-  OnChanges,
   OnDestroy,
-  Output,
-  ViewChild,
-  SimpleChanges,
-  EventEmitter,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 
 import { HttpClient } from '@angular/common/http';
 import { map, switchMap } from 'rxjs/operators';
 
-/**
- * You may include a different variant of BpmnJS:
- *
- * bpmn-viewer  - displays BPMN diagrams without the ability
- *                to navigate them
- * bpmn-modeler - bootstraps a full-fledged BPMN editor
- */
-import * as BpmnJS from 'bpmn-js/dist/bpmn-modeler.production.min.js';
-import { is, getBusinessObject } from 'bpmn-js/lib/util/ModelUtil';
+import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 import { from, Observable, Subscription } from 'rxjs';
 import { BpmnService } from '../common/bpmn.service';
+import Canvas from 'diagram-js/lib/core/Canvas';
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import Modeling from 'diagram-js/lib/features/modeling/Modeling';
 
 @Component({
   selector: 'app-diagram',
@@ -41,29 +31,30 @@ import { BpmnService } from '../common/bpmn.service';
   ],
 })
 export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
-  // private bpmnJS: any;
-  private canvas: any;
-  private elementRegistry: any;
-  private modeling: any;
+  private canvas: Canvas;
+  private elementRegistry: ElementRegistry;
+  private modeling: Modeling;
 
   diagramUrl: string =
     'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
 
   @ViewChild('canvas', { static: true }) private el!: ElementRef;
 
-  constructor(private http: HttpClient, private bpmn: BpmnService) {}
+  constructor(private http: HttpClient, private bpmn: BpmnService) {
+    this.canvas = bpmn.getCanvas();
+    this.elementRegistry = bpmn.getElementRegistry();
+    this.modeling = bpmn.getModeling();
+  }
 
   ngOnInit() {
-    // this.bpmnJS = new BpmnJS();
-
     this.initModeler();
   }
 
   initModeler() {
     console.log('[BPMN] Modeler:', this.bpmn['modeler']);
-    this.canvas = this.bpmn.get('canvas');
-    this.elementRegistry = this.bpmn.get('elementRegistry');
-    this.modeling = this.bpmn.get('modeling');
+    this.canvas = this.bpmn.getCanvas();
+    this.elementRegistry = this.bpmn.getElementRegistry();
+    this.modeling = this.bpmn.getModeling();
 
     this.bpmn.on('import.done', ({ error }: any) => {
       console.log('[BPMN] import done');
@@ -76,7 +67,7 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
 
   doThings() {
     console.log('[BPMN] elementRegistry:', this.elementRegistry);
-    this.elementRegistry.forEach((element: any, gfx: any) => {
+    this.elementRegistry.forEach((element, gfx) => {
       console.log('[BPMN] element type', element.type);
       if (is(element, 'bpmn:Task')) {
         this.modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });

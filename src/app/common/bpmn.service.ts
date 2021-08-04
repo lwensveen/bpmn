@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
 import Modeler from 'bpmn-js/lib/Modeler';
+import Canvas from 'diagram-js/lib/core/Canvas';
+import ElementRegistry from "diagram-js/lib/core/ElementRegistry";
+import Modeling from "diagram-js/lib/features/modeling/Modeling";
 
 export interface BpmnModelerOptions {
   container?: string;
@@ -27,12 +30,24 @@ export class BpmnService {
   importXML(
     xml: string,
     bpmnDiagram?: Object | string
-  ): Promise<{ warnings: Array<string> }> {
+  ): Promise<{ warnings: string[] }> {
     return this.modeler.importXML(xml, bpmnDiagram);
   }
 
   get(name: string): any {
     return this.modeler.get(name);
+  }
+
+  getCanvas(): Canvas {
+    return this.get('canvas');
+  }
+
+  getElementRegistry(): ElementRegistry {
+    return this.get('elementRegistry');
+  }
+
+  getModeling(): Modeling {
+    return this.get('modeling');
   }
 
   on(event: string, callback: ({}: any) => void): void {
