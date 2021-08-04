@@ -1,3 +1,6 @@
 <input type="text" [(ngModel)]="diagramUrl" />
 <button (click)="loadUrl(diagramUrl)">Load url</button>
-<div #canvas class="diagram-canvas"></div>
+<div class="diagram-container">
+  <div #canvas class="diagram-canvas"></div>
+  <div #properties class="diagram-properties"></div>
+</div>

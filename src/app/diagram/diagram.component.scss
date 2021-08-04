@@ -1,0 +1,15 @@
+.diagram-container {
+  display: flex;
+}
+
+.diagram-canvas {
+  width: 100%;
+  height: 500px;
+  border: lightgray solid thin;
+}
+
+.diagram-properties {
+  flex-basis: 15vw;
+  border: lightgray solid thin;
+  border-left: none;
+}

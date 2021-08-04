@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
-import Modeler from 'bpmn-js/lib/Modeler';
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import ElementRegistry from "diagram-js/lib/core/ElementRegistry";
 import Modeling from "diagram-js/lib/features/modeling/Modeling";
+
+const propertiesPanelModule = require('bpmn-js-properties-panel');
+const propertiesProvider = require('bpmn-js-properties-panel/lib/provider/bpmn');
 
 export interface BpmnModelerOptions {
   container?: string;
@@ -20,11 +23,13 @@ export class BpmnService {
   private modeler: any;
 
   constructor() {
-    this.modeler = new Modeler();
-  }
-
-  init(options?: BpmnModelerOptions) {
-    this.modeler = new Modeler(options);
+    this.modeler = new BpmnModeler({
+      height: '100%',
+      additionalModules: [
+        propertiesPanelModule,
+        propertiesProvider
+      ]
+    } as BpmnModelerOptions);
   }
 
   importXML(
@@ -48,6 +53,10 @@ export class BpmnService {
 
   getModeling(): Modeling {
     return this.get('modeling');
+  }
+
+  getPropertiesPanel(): any {
+    return this.get('propertiesPanel');
   }
 
   on(event: string, callback: ({}: any) => void): void {

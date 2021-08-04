@@ -6,45 +6,25 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-
 import { HttpClient } from '@angular/common/http';
-import { map, switchMap } from 'rxjs/operators';
-
-import { is } from 'bpmn-js/lib/util/ModelUtil';
-
 import { from, Observable, Subscription } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { BpmnService } from '../common/bpmn.service';
-import Canvas from 'diagram-js/lib/core/Canvas';
-import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import Modeling from 'diagram-js/lib/features/modeling/Modeling';
 
 @Component({
   selector: 'app-diagram',
   templateUrl: './diagram.component.html',
-  styles: [
-    `
-      .diagram-canvas {
-        height: 80vh;
-        width: 100%;
-      }
-    `,
-  ],
+  styleUrls: ['./diagram.component.scss'],
 })
 export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
-  private canvas: Canvas;
-  private elementRegistry: ElementRegistry;
-  private modeling: Modeling;
-
   diagramUrl: string =
     'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
 
-  @ViewChild('canvas', { static: true }) private el!: ElementRef;
+  @ViewChild('canvas', { static: true }) private canvasEl!: ElementRef;
+  @ViewChild('properties', { static: true }) private propertiesEl!: ElementRef;
 
-  constructor(private http: HttpClient, private bpmn: BpmnService) {
-    this.canvas = bpmn.getCanvas();
-    this.elementRegistry = bpmn.getElementRegistry();
-    this.modeling = bpmn.getModeling();
-  }
+  constructor(private http: HttpClient, private bpmn: BpmnService) {}
 
   ngOnInit() {
     this.initModeler();
@@ -52,33 +32,30 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
 
   initModeler() {
     console.log('[BPMN] Modeler:', this.bpmn['modeler']);
-    this.canvas = this.bpmn.getCanvas();
-    this.elementRegistry = this.bpmn.getElementRegistry();
-    this.modeling = this.bpmn.getModeling();
+    const canvas = this.bpmn.getCanvas();
 
     this.bpmn.on('import.done', ({ error }: any) => {
       console.log('[BPMN] import done');
       if (!error) {
         this.doThings();
-        this.canvas.zoom('fit-viewport', 'auto');
+        canvas.zoom('fit-viewport', 'auto');
       }
     });
   }
 
   doThings() {
-    console.log('[BPMN] elementRegistry:', this.elementRegistry);
-    this.elementRegistry.forEach((element, gfx) => {
-      console.log('[BPMN] element type', element.type);
+    const elementRegistry = this.bpmn.getElementRegistry();
+    const modeling = this.bpmn.getModeling();
+    elementRegistry.forEach((element, gfx) => {
       if (is(element, 'bpmn:Task')) {
-        this.modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
+        modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
       }
-      console.log('[BPMN] gfx', gfx);
     });
-    console.log('[BPMN] modeling:', this.modeling);
   }
 
   ngAfterContentInit(): void {
-    this.bpmn.attachTo(this.el.nativeElement);
+    this.bpmn.attachTo(this.canvasEl.nativeElement);
+    this.bpmn.getPropertiesPanel().attachTo(this.propertiesEl.nativeElement);
   }
 
   ngOnDestroy(): void {

@@ -1,1 +1,13 @@
 /* You can add global styles to this file, and also import other style files */
+.bpp-textfield {
+  input {
+    padding-right: 24px;
+  }
+  .clear {
+    right: -12px;
+  }
+}
+
+.bpp-properties-panel [type="text"] {
+  width: calc(100% - 18px);
+}
