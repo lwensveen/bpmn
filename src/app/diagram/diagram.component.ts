@@ -7,8 +7,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { from, Observable, Subscription } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { BpmnService } from '../common/bpmn.service';
 
@@ -20,6 +20,7 @@ import { BpmnService } from '../common/bpmn.service';
 export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   diagramUrl: string =
     'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
+  diagramXml: string = '';
 
   @ViewChild('canvas', { static: true }) private canvasEl!: ElementRef;
   @ViewChild('properties', { static: true }) private propertiesEl!: ElementRef;
@@ -68,27 +69,29 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   loadUrl(url: string): Subscription {
     return this.http
       .get(url, { responseType: 'text' })
-      .pipe(
-        switchMap((xml: string) => this.importDiagram(xml)),
-        map((result) => result.warnings)
-      )
+      .pipe(switchMap((xml: string) => this.bpmn.importXML(xml)))
       .subscribe(
         (warnings) => {
-          console.log('[BPMN] import warnings:', warnings);
+          if (warnings.length) {
+            console.log('[BPMN] import warnings:', warnings);
+          }
         },
         (err) => {
-          console.warn('[BPMN] import failed:', err);
+          console.error('[BPMN] import failed:', err);
         }
       );
   }
 
-  /**
-   * Creates a Promise to import the given XML into the current
-   * BpmnJS instance, then returns it as an Observable.
-   *
-   * @see https://github.com/bpmn-io/bpmn-js-callbacks-to-promises#importxml
-   */
-  private importDiagram(xml: string): Observable<{ warnings: Array<any> }> {
-    return from(this.bpmn.importXML(xml));
+  loadXml(xml: string): Subscription {
+    return this.bpmn.importXML(xml).subscribe(
+      (warnings) => {
+        if (warnings.length) {
+          console.log('[BPMN] import warnings:', warnings);
+        }
+      },
+      (err) => {
+        console.error('[BPMN] import failed:', err);
+      }
+    );
   }
 }

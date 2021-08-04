@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import Canvas from 'diagram-js/lib/core/Canvas';
-import ElementRegistry from "diagram-js/lib/core/ElementRegistry";
-import Modeling from "diagram-js/lib/features/modeling/Modeling";
+import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
+import Modeling from 'diagram-js/lib/features/modeling/Modeling';
+import { from, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 const propertiesPanelModule = require('bpmn-js-properties-panel');
 const propertiesProvider = require('bpmn-js-properties-panel/lib/provider/bpmn');
@@ -24,19 +26,22 @@ export class BpmnService {
 
   constructor() {
     this.modeler = new BpmnModeler({
-      height: '100%',
-      additionalModules: [
-        propertiesPanelModule,
-        propertiesProvider
-      ]
+      additionalModules: [propertiesPanelModule, propertiesProvider],
     } as BpmnModelerOptions);
   }
 
-  importXML(
-    xml: string,
-    bpmnDiagram?: Object | string
-  ): Promise<{ warnings: string[] }> {
-    return this.modeler.importXML(xml, bpmnDiagram);
+  /**
+   * Creates a Promise to import the given XML into the current
+   * BpmnJS instance, then returns it as an Observable.
+   *
+   * @see https://github.com/bpmn-io/bpmn-js-callbacks-to-promises#importxml
+   */
+  importXML(xml: string, bpmnDiagram?: Object | string): Observable<string[]> {
+    return from(
+      this.modeler.importXML(xml, bpmnDiagram) as Promise<{
+        warnings: string[];
+      }>
+    ).pipe(map((result) => result.warnings));
   }
 
   get(name: string): any {

@@ -1,3 +1,18 @@
+.input-container {
+  display: flex;
+  width: 15vw;
+  margin-bottom: 4px;
+
+  input,
+  textarea {
+    flex-grow: 1;
+  }
+
+  button {
+    flex-basis: 80px;
+  }
+}
+
 .diagram-container {
   display: flex;
 }
