@@ -31,6 +31,33 @@ declare module 'diagram-js/lib/features/modeling/Modeling' {
   export default Modeling;
 }
 
+declare module 'diagram-js/lib/features/overlays/Overlays' {
+  interface Overlay {
+    html: string | HTMLElement;
+    show?: {
+      minZoom?: number;
+      maxZoom?: number;
+    };
+    position: {
+      left?: number;
+      top?: number;
+      bottom?: number;
+      right?: number;
+    };
+    scale?: boolean | { min?: number; max?: number };
+  }
+
+  export interface Overlays {
+    add(
+      element: string | djs.model.Base,
+      type: string | Overlay,
+      overlay?: Overlay
+    ): string;
+  }
+
+  export default Overlays;
+}
+
 declare namespace djs {
   namespace model {
     interface Base {

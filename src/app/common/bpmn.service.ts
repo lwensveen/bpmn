@@ -3,6 +3,7 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
 import Modeling from 'diagram-js/lib/features/modeling/Modeling';
+import Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -58,6 +59,10 @@ export class BpmnService {
 
   getModeling(): Modeling {
     return this.get('modeling');
+  }
+
+  getOverlays(): Overlays {
+    return this.get('overlays');
   }
 
   getPropertiesPanel(): any {

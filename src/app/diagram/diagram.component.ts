@@ -47,10 +47,27 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   doThings() {
     const elementRegistry = this.bpmn.getElementRegistry();
     const modeling = this.bpmn.getModeling();
+    const overlays = this.bpmn.getOverlays();
     elementRegistry.forEach((element, gfx) => {
       if (is(element, 'bpmn:Task')) {
         modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
       }
+    });
+
+    overlays.add('SCAN_OK', 'note', {
+      position: {
+        bottom: 0,
+        right: 0,
+      },
+      html: '<div class="diagram-note">Mixed up the labels?</div>',
+    });
+    overlays.add('sid-5134932A-1863-4FFA-BB3C-A4B4078B11A9', 'note', {
+      position: {
+        bottom: 0,
+        right: 0,
+      },
+      scale: false,
+      html: '<div class="diagram-note">I don\'t scale</div>',
     });
   }
 
