@@ -32,7 +32,6 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   }
 
   initModeler() {
-    console.log('[BPMN] Modeler:', this.bpmn['modeler']);
     const canvas = this.bpmn.getCanvas();
 
     this.bpmn.on('import.done', ({ error }: any) => {

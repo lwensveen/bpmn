@@ -1,38 +1,113 @@
 declare module 'bpmn-js/lib/util/ModelUtil';
-declare module 'bpmn-js/lib/Modeler';
+declare module 'diagram-js' {
+  export default class Diagram {
+    get(name: string, strict?: boolean): any;
+  }
+}
+
+declare module 'bpmn-js/lib/BaseViewer' {
+  import Diagram from 'diagram-js';
+
+  export interface ImportXMLResult {
+    warnings: string[];
+  }
+
+  export interface ImportXMLError {
+    warnings: string[];
+  }
+
+  export default class BaseViewer extends Diagram {
+    on(
+      events: string | string[],
+      priority: number,
+      callback: (...args: any[]) => void,
+      target?: Object
+    ): void;
+    on(
+      events: string | string[],
+      callback: (...args: any[]) => void,
+      target?: Object
+    ): void;
+
+    attachTo(parentNode: string | Node): void;
+
+    destroy(): void;
+
+    importXML(xml: string, bpmnDiagram?: Object | string): Promise<ImportXMLResult | ImportXMLError>;
+  }
+}
+
+declare module 'bpmn-js/lib/BaseModeler' {
+  import BaseViewer from 'bpmn-js/lib/BaseViewer';
+  export default class BaseModeler extends BaseViewer {}
+}
+
+declare module 'bpmn-js/lib/Modeler' {
+  import BaseModeler from 'bpmn-js/lib/BaseModeler';
+
+  export interface ModelerOptions {
+    container?: string;
+    width?: string | number;
+    height?: string | number;
+    moddleExtensions?: Object;
+    modules?: any[];
+    additionalModules?: any[];
+  }
+
+  export default class Modeler extends BaseModeler {
+    constructor(options?: ModelerOptions);
+  }
+}
 
 declare module 'diagram-js/lib/core/Canvas' {
-  export interface Canvas {
+  export default class Canvas {
     zoom(
       newScale: string | number,
       center: string | { x: number; y: number }
     ): number;
-  }
 
-  export default Canvas;
+    scrollToElement(
+      element: djs.model.Base,
+      padding?:
+        | number
+        | { top?: number; right?: number; bottom?: number; left?: number }
+    ): void;
+  }
 }
 
 declare module 'diagram-js/lib/core/ElementRegistry' {
-  export interface ElementRegistry {
+  export default class ElementRegistry {
     forEach(fn: (element: djs.model.Base, gfx: SVGElement) => void): void;
   }
-
-  export default ElementRegistry;
 }
 
-declare module 'diagram-js/lib/features/modeling/Modeling' {
-  export interface Modeling {
+declare module 'diagram-js/lib/core/EventBus' {
+  export default class EventBus {
+    on(
+      events: string | string[],
+      priority: number,
+      callback: (...args: any[]) => void,
+      that?: Object
+    ): void;
+    on(
+      events: string | string[],
+      callback: (...args: any[]) => void,
+      that?: Object
+    ): void;
+  }
+}
+
+declare module 'bpmn-js/lib/features/modeling/Modeling' {
+  export default class Modeling {
     setColor(
       elements: djs.model.Base | djs.model.Base[],
       colors: { stroke: string; fill: string }
     ): void;
   }
-
-  export default Modeling;
 }
 
 declare module 'diagram-js/lib/features/overlays/Overlays' {
-  interface Overlay {
+  export interface Overlay {
     html: string | HTMLElement;
     show?: {
       minZoom?: number;
@@ -47,15 +122,13 @@ declare module 'diagram-js/lib/features/overlays/Overlays' {
     scale?: boolean | { min?: number; max?: number };
   }
 
-  export interface Overlays {
+  export default class Overlays {
     add(
       element: string | djs.model.Base,
       type: string | Overlay,
       overlay?: Overlay
     ): string;
   }
-
-  export default Overlays;
 }
 
 declare namespace djs {
