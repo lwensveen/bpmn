@@ -9,8 +9,9 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { is } from 'bpmn-js/lib/util/ModelUtil';
+import { getBusinessObject, is } from 'bpmn-js/lib/util/ModelUtil';
 import { BpmnService } from '../common/bpmn.service';
+import Base = djs.model.Base;
 
 @Component({
   selector: 'app-diagram',
@@ -18,6 +19,8 @@ import { BpmnService } from '../common/bpmn.service';
   styleUrls: ['./diagram.component.scss'],
 })
 export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
+  private validationErrors: Map<string, string[]> = new Map();
+
   diagramUrl: string =
     'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
   diagramXml: string = '';
@@ -28,46 +31,92 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   constructor(private http: HttpClient, private bpmn: BpmnService) {}
 
   ngOnInit() {
-    this.initModeler();
+    this.registerEventHandlers();
   }
 
-  initModeler() {
+  registerEventHandlers() {
     const canvas = this.bpmn.getCanvas();
 
-    this.bpmn.on('import.done', ({ error }: any) => {
+    // after a successful xml import
+    this.bpmn.on('import.done', ({ error }) => {
       console.log('[BPMN] import done');
       if (!error) {
         this.doThings();
         canvas.zoom('fit-viewport', 'auto');
       }
     });
+
+    this.bpmn.on('element.click', (event) => {
+      console.log('[BPMN] element.click event:', event);
+    });
+
+    this.bpmn.on('elements.changed', (event) => {
+      console.log('[BPMN] elements.changed event:', event);
+      event.elements.forEach((element: any) => {
+        switch (element.type) {
+          case 'bpmn:SequenceFlow':
+            this.checkElementValidity(element.source);
+            this.checkElementValidity(element.target);
+            // TODO: find workaroud for when "SequenceFlow" is removed, since source and target are null
+            break;
+          default:
+            this.checkElementValidity(element);
+        }
+      });
+    });
+  }
+
+  checkElementValidity(element: Base) {
+    if (!element || element.type !== 'bpmn:Task') {
+      return;
+    }
+
+    console.log('[BPMN] validating element', element);
+
+    this.clearValidationErrors(element);
+    const businessObject = getBusinessObject(element);
+
+    // check business rules
+    if (!(businessObject.incoming && businessObject.incoming.length)) {
+      this.addValidationError(element, 'No incoming connections');
+    }
+    if (!(businessObject.outgoing && businessObject.outgoing.length)) {
+      this.addValidationError(element, 'No outgoing connections');
+    }
+  }
+
+  addValidationError(element: Base, error: string) {
+    const businessObject = getBusinessObject(element);
+    if (!businessObject.errorOverlay) {
+      businessObject.errorOverlay = this.bpmn.addErrorOverlay(
+        element,
+        'Invalid task'
+      );
+    }
+    businessObject.validationErrors.push(error);
+  }
+
+  clearValidationErrors(element: Base) {
+    const businessObject = getBusinessObject(element);
+    businessObject.validationErrors = [];
+    if (businessObject.errorOverlay) {
+      this.bpmn.removeOverlay(businessObject.errorOverlay);
+      businessObject.errorOverlay = undefined;
+    }
   }
 
   doThings() {
     const elementRegistry = this.bpmn.getElementRegistry();
     const modeling = this.bpmn.getModeling();
-    const overlays = this.bpmn.getOverlays();
+    const canvas = this.bpmn.getCanvas();
     elementRegistry.forEach((element, gfx) => {
+      this.validationErrors.set(element.id, []);
       if (is(element, 'bpmn:Task')) {
         modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
       }
     });
 
-    overlays.add('SCAN_OK', 'note', {
-      position: {
-        bottom: 0,
-        right: 0,
-      },
-      html: '<div class="diagram-note">Mixed up the labels?</div>',
-    });
-    overlays.add('sid-5134932A-1863-4FFA-BB3C-A4B4078B11A9', 'note', {
-      position: {
-        bottom: 0,
-        right: 0,
-      },
-      scale: false,
-      html: '<div class="diagram-note">I don\'t scale</div>',
-    });
+    this.bpmn.addNoteOverlay('SCAN_OK', 'Mixed up the labels?');
   }
 
   ngAfterContentInit(): void {
@@ -77,6 +126,10 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.bpmn.destroy();
+  }
+
+  createDiagram(): void {
+    this.bpmn.createDiagram();
   }
 
   /**

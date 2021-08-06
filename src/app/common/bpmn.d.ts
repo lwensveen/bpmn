@@ -17,23 +17,14 @@ declare module 'bpmn-js/lib/BaseViewer' {
   }
 
   export default class BaseViewer extends Diagram {
-    on(
-      events: string | string[],
-      priority: number,
-      callback: (...args: any[]) => void,
-      target?: Object
-    ): void;
-    on(
-      events: string | string[],
-      callback: (...args: any[]) => void,
-      target?: Object
-    ): void;
-
     attachTo(parentNode: string | Node): void;
 
     destroy(): void;
 
-    importXML(xml: string, bpmnDiagram?: Object | string): Promise<ImportXMLResult | ImportXMLError>;
+    importXML(
+      xml: string,
+      bpmnDiagram?: Object | string
+    ): Promise<ImportXMLResult | ImportXMLError>;
   }
 }
 
@@ -56,6 +47,23 @@ declare module 'bpmn-js/lib/Modeler' {
 
   export default class Modeler extends BaseModeler {
     constructor(options?: ModelerOptions);
+
+    createDiagram(): void;
+  }
+}
+
+declare module 'bpmn-js/lib/features/modeling/Modeling' {
+  export default class Modeling {
+    setColor(
+      elements: djs.model.Base | djs.model.Base[],
+      colors: { stroke?: string; fill?: string }
+    ): void;
+  }
+}
+
+declare module 'bpmn-js-properties-panel/lib/PropertiesPanel' {
+  export default class PropertiesPanel {
+    attachTo(parentNode: string | Node): void;
   }
 }
 
@@ -97,16 +105,9 @@ declare module 'diagram-js/lib/core/EventBus' {
   }
 }
 
-declare module 'bpmn-js/lib/features/modeling/Modeling' {
-  export default class Modeling {
-    setColor(
-      elements: djs.model.Base | djs.model.Base[],
-      colors: { stroke: string; fill: string }
-    ): void;
-  }
-}
-
 declare module 'diagram-js/lib/features/overlays/Overlays' {
+  import Base = djs.model.Base;
+
   export interface Overlay {
     html: string | HTMLElement;
     show?: {
@@ -123,11 +124,10 @@ declare module 'diagram-js/lib/features/overlays/Overlays' {
   }
 
   export default class Overlays {
-    add(
-      element: string | djs.model.Base,
-      type: string | Overlay,
-      overlay?: Overlay
-    ): string;
+    add(element: string | Base, type: string, overlay: Overlay): string;
+    add(element: string | Base, overlay: Overlay): string;
+
+    remove(id: string): void;
   }
 }
 
@@ -135,7 +135,7 @@ declare namespace djs {
   namespace model {
     interface Base {
       id: string;
-      businessObject: Object;
+      businessObject: any;
       label: string;
       type: string;
     }

@@ -13,14 +13,23 @@
   width: calc(100% - 18px);
 }
 
-.diagram-note {
-  background-color: rgba(66, 180, 21, 0.7);
+.diagram-overlay {
   color: White;
   border-radius: 5px;
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   font-size: 12px;
   padding: 5px;
   min-height: 16px;
   width: 50px;
   text-align: center;
+
+  &.note {
+    background-color: rgba(66, 180, 21, 0.7);
+  }
+  &.error {
+    background-color: rgba(205, 54, 54, 0.7);
+  }
+  &.warning {
+    background-color: rgba(208, 170, 28, 0.7);
+  }
 }

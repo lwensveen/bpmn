@@ -1,4 +1,8 @@
 <div class="input-container">
+  <button (click)="createDiagram()">Create new diagram</button>
+</div>
+
+<div class="input-container">
   <input type="text" [(ngModel)]="diagramUrl" />
   <button (click)="loadUrl(diagramUrl)">Load url</button>
 </div>

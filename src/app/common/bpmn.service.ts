@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
 import Modeler from 'bpmn-js/lib/Modeler';
+import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
+import PropertiesPanel from 'bpmn-js-properties-panel/lib/PropertiesPanel';
 import Canvas from 'diagram-js/lib/core/Canvas';
 import ElementRegistry from 'diagram-js/lib/core/ElementRegistry';
-import Modeling from 'bpmn-js/lib/features/modeling/Modeling';
+import EventBus from 'diagram-js/lib/core/EventBus';
 import Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import Base = djs.model.Base;
 
 const propertiesPanelModule = require('bpmn-js-properties-panel');
 const propertiesProvider = require('bpmn-js-properties-panel/lib/provider/bpmn');
@@ -54,12 +57,16 @@ export class BpmnService {
     return this.get('overlays');
   }
 
-  getPropertiesPanel(): any {
+  getEventBus(): EventBus {
+    return this.get('eventBus');
+  }
+
+  getPropertiesPanel(): PropertiesPanel {
     return this.get('propertiesPanel');
   }
 
   on(event: string, callback: (...args: any[]) => void): void {
-    return this._modeler.on(event, callback);
+    return this.getEventBus().on(event, callback);
   }
 
   attachTo(element: Node): void {
@@ -68,5 +75,35 @@ export class BpmnService {
 
   destroy(): void {
     return this._modeler.destroy();
+  }
+
+  setColor(
+    elements: Base | Base[],
+    color: { stroke: string; fill: string }
+  ): void {
+    return this.getModeling().setColor(elements, color);
+  }
+
+  createDiagram(): void {
+    return this._modeler.createDiagram();
+  }
+
+  addErrorOverlay(element: string | Base, message: string): string {
+    return this.addOverlay(element, 'error', message);
+  }
+
+  addNoteOverlay(element: string | Base, message: string): string {
+    return this.addOverlay(element, 'note', message);
+  }
+
+  addOverlay(element: string | Base, type: string, message: string): string {
+    return this.getOverlays().add(element, type, {
+      html: `<div class="diagram-overlay ${type}">${message}</div>`,
+      position: { bottom: 0, right: 0 },
+    });
+  }
+
+  removeOverlay(id: string): void {
+    return this.getOverlays().remove(id);
   }
 }
