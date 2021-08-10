@@ -92,6 +92,10 @@ export class BpmnService {
     return this.addOverlay(element, 'error', message);
   }
 
+  addWarningOverlay(element: string | Base, message: string): string {
+    return this.addOverlay(element, 'warning', message);
+  }
+
   addNoteOverlay(element: string | Base, message: string): string {
     return this.addOverlay(element, 'note', message);
   }
@@ -99,7 +103,7 @@ export class BpmnService {
   addOverlay(element: string | Base, type: string, message: string): string {
     return this.getOverlays().add(element, type, {
       html: `<div class="diagram-overlay ${type}">${message}</div>`,
-      position: { bottom: 0, right: 0 },
+      position: { bottom: -5, left: 20 },
     });
   }
 

@@ -19,8 +19,6 @@ import Base = djs.model.Base;
   styleUrls: ['./diagram.component.scss'],
 })
 export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
-  private validationErrors: Map<string, string[]> = new Map();
-
   diagramUrl: string =
     'https://raw.githubusercontent.com/bpmn-io/bpmn-js-examples/master/starter/diagram.bpmn';
   diagramXml: string = '';
@@ -52,11 +50,12 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
 
     this.bpmn.on('elements.changed', (event) => {
       console.log('[BPMN] elements.changed event:', event);
-      event.elements.forEach((element: any) => {
+      event.elements.forEach((element: Base) => {
         switch (element.type) {
           case 'bpmn:SequenceFlow':
-            this.checkElementValidity(element.source);
-            this.checkElementValidity(element.target);
+            this.checkElementValidity(element);
+            this.checkElementValidity(element.source as Base);
+            this.checkElementValidity(element.target as Base);
             // TODO: find workaroud for when "SequenceFlow" is removed, since source and target are null
             break;
           default:
@@ -67,38 +66,65 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
   }
 
   checkElementValidity(element: Base) {
-    if (!element || element.type !== 'bpmn:Task') {
+    if (!element) {
       return;
     }
 
     console.log('[BPMN] validating element', element);
-
-    this.clearValidationErrors(element);
+    this.clearAllErrors(element);
     const businessObject = getBusinessObject(element);
 
-    // check business rules
-    if (!(businessObject.incoming && businessObject.incoming.length)) {
-      this.addValidationError(element, 'No incoming connections');
-    }
-    if (!(businessObject.outgoing && businessObject.outgoing.length)) {
-      this.addValidationError(element, 'No outgoing connections');
+    if (
+      element.type === 'bpmn:Task' ||
+      element.type === 'bpmn:UserTask' ||
+      element.type === 'bpmn:ScriptTask'
+    ) {
+      // check business rules
+      if (!(businessObject.incoming && businessObject.incoming.length)) {
+        this.addValidationError(element, 'No incoming connections');
+      }
+      if (!(businessObject.outgoing && businessObject.outgoing.length)) {
+        this.addValidationError(element, 'No outgoing connections');
+      }
+    } else if (element.type === 'bpmn:SequenceFlow') {
+      // check expression syntax
+      const name = businessObject.name;
+      if (name) {
+        console.log(`[BPMN] checking syntax of expression "${name}"`);
+        const conditionRegExp = new RegExp(
+          /^{(\[[A-Za-z_:]+]\s([<>]=?|[!=]=)\s("\w*"|'\w*')|(\(\[[A-Za-z_:]+]\s([<>]=?|[!=]=)\s("\w*"|'\w*')\)(\s(and|or)\s)?)+)}$/
+        );
+        const isValidCondition = conditionRegExp.test(name);
+        console.log(`[BPMN] expression is ${isValidCondition ? '' : 'in'}valid`);
+        if (!isValidCondition) {
+          this.addSyntaxError(element, 'Invalid syntax');
+        }
+      }
     }
   }
 
   addValidationError(element: Base, error: string) {
     const businessObject = getBusinessObject(element);
     if (!businessObject.errorOverlay) {
-      businessObject.errorOverlay = this.bpmn.addErrorOverlay(
+      businessObject.errorOverlay = this.bpmn.addWarningOverlay(
         element,
         'Invalid task'
       );
     }
-    businessObject.validationErrors.push(error);
+    businessObject.errors.push(error);
   }
 
-  clearValidationErrors(element: Base) {
+  addSyntaxError(element: Base, error: string) {
     const businessObject = getBusinessObject(element);
-    businessObject.validationErrors = [];
+    if (!businessObject.errorOverlay) {
+      businessObject.errorOverlay = this.bpmn.addErrorOverlay(element, 'Invalid syntax');
+    }
+    businessObject.errors.push(error);
+  }
+
+  clearAllErrors(element: Base) {
+    const businessObject = getBusinessObject(element);
+    businessObject.errors = [];
     if (businessObject.errorOverlay) {
       this.bpmn.removeOverlay(businessObject.errorOverlay);
       businessObject.errorOverlay = undefined;
@@ -110,7 +136,6 @@ export class DiagramComponent implements AfterContentInit, OnInit, OnDestroy {
     const modeling = this.bpmn.getModeling();
     const canvas = this.bpmn.getCanvas();
     elementRegistry.forEach((element, gfx) => {
-      this.validationErrors.set(element.id, []);
       if (is(element, 'bpmn:Task')) {
         modeling.setColor(element, { stroke: '#0B6B6F', fill: '#94d4d6' });
       }

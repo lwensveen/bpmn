@@ -138,6 +138,8 @@ declare namespace djs {
       businessObject: any;
       label: string;
       type: string;
+      source?: Base;
+      target?: Base;
     }
   }
 }
